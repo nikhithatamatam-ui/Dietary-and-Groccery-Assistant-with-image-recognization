@@ -1,0 +1,213 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.content }}",
+        "options": {
+          "systemMessage": "give me a receipe with the available ingrediants in the fridge\nYou are a Dietary and Grocery Assistant with Image Recognition.\n\nWhen the user uploads an image, identify all visible food and grocery items.\n\nConsider the user's dietary preferences and allergies.\n\nProvide:\n1. Detected grocery items\n2. Suitable recipes\n3. Missing ingredients\n4. Grocery shopping list\n\nDo not recommend ingredients that conflict with the user's dietary restrictions or allergies.\n\nIf the user has not provided dietary preferences, ask for them or clearly state that the recommendations are general.\n\nKeep the answer simple and practical.\nBefore recommending food, check:\n- Dietary preference\n- Allergies\n- Ingredients available in the image\nAlways organize the response in this format:\n\n📷 Detected Items:\n- item 1\n- item 2\n- item 3\n\n🥗 Dietary Preference:\n- user's preference\n\n🍲 Recommended Recipe:\n- recipe name\n- short preparation\n\n🛒 Missing Ingredients:\n- ingredient 1\n- ingredient 2\n\n🛍️ Grocery Shopping List:\n- ingredient 1\n- ingredient 2"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        240,
+        32
+      ],
+      "id": "c7105f48-0dc9-4595-8f43-0b5bbb41963c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "modelId": {
+          "__rl": true,
+          "value": "kimi-k2.6",
+          "mode": "list",
+          "cachedResultName": "kimi-k2.6"
+        },
+        "text": "this is the image of a door opened refrigerator , you job is to analyze the item from the refrigerator in  the list format.",
+        "binaryPropertyName": "=data",
+        "simplify": "=true",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.moonshot",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        176
+      ],
+      "id": "4b569d9e-348a-4712-a9a2-c09d8aed5376",
+      "name": "Analyze image",
+      "credentials": {
+        "moonshotApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAlibabaCloud",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        224
+      ],
+      "id": "c2267ae2-921a-4dd5-92d5-ceeab56d861b",
+      "name": "Qwen Cloud Chat Model",
+      "credentials": {
+        "alibabaCloudApi": {
+          "id": null,
+          "name": "",
+          "__aiGatewayManaged": true
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -512,
+        176
+      ],
+      "id": "c8f80c82-b96c-40b1-aec5-cb9d1b94a6f6",
+      "name": "Telegram Trigger",
+      "webhookId": "8c98fbfe-c120-4076-9217-98ba443c5cb4",
+      "credentials": {
+        "telegramApi": {
+          "id": "ivzTX3nnF2HWAnYc",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo[2].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -288,
+        176
+      ],
+      "id": "0ab899de-57fe-4c33-8d37-d1c56064181a",
+      "name": "Get a file",
+      "webhookId": "7c5e007b-1238-43a3-a08e-634c600c7538",
+      "credentials": {
+        "telegramApi": {
+          "id": "ivzTX3nnF2HWAnYc",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        112
+      ],
+      "id": "2b2f76c4-1224-4d71-96f6-133018861338",
+      "name": "Send a text message",
+      "webhookId": "56775be9-cd03-4716-a0e6-fd7b4cb0eb91",
+      "credentials": {
+        "telegramApi": {
+          "id": "ivzTX3nnF2HWAnYc",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qwen Cloud Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "c5a7f916-7057-44db-b7e6-0cb90aeccfa6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "062ec938f68d66d1a9ba74930d4946b8a220d8962e837aee55dbe3ece5cfcc12"
+  },
+  "nodeGroups": [],
+  "id": "6rX8kv5X0uMGR10s",
+  "tags": []
+}
